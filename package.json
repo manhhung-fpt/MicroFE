@@ -1,0 +1,13 @@
+{
+  "name": "sd5818-microfrontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "concurrently --kill-others-on-fail --prefix-colors cyan,yellow,green,blue,magenta \"npm start --prefix shell\" \"npm start --prefix products\" \"npm start --prefix orders\" \"npm start --prefix account\" \"npm start --prefix checkout\"",
+    "install:all": "npm install --prefix shell && npm install --prefix products && npm install --prefix orders && npm install --prefix account && npm install --prefix checkout",
+    "build:all": "npm run build --prefix shell && npm run build --prefix products && npm run build --prefix orders && npm run build --prefix account && npm run build --prefix checkout"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.0"
+  }
+}
