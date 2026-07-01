@@ -4,9 +4,6 @@
 
 - [Tổng quan kiến trúc](#tổng-quan-kiến-trúc)
 - [Luồng chạy của ứng dụng](#luồng-chạy-của-ứng-dụng)
-- [Cấu trúc thư mục](#cấu-trúc-thư-mục)
-- [Chi tiết từng Micro App](#chi-tiết-từng-micro-app)
-- [Giao tiếp giữa các MFE](#giao-tiếp-giữa-các-mfe)
 - [Cài đặt và chạy project](#cài-đặt-và-chạy-project)
 
 ---
@@ -45,8 +42,6 @@ Dự án sử dụng mô hình **Host/Remote** của Webpack Module Federation:
 
 ## Luồng chạy của ứng dụng
 
-### 1. Khởi động
-
 ```
 Trình duyệt mở http://localhost:3000
         │
@@ -71,78 +66,7 @@ shell/src/App.tsx
                            ├── /orders/*   → lazy load orders/App   (từ :3002)
                            ├── /account/*  → lazy load account/App  (từ :3003)
                            └── /checkout/* → lazy load checkout/App (từ :3004)
-```
 
-### 2. Lazy Loading Remote Module
-
-Khi người dùng điều hướng tới `/products`, shell thực hiện:
-
-```
-React.lazy(() => import('products/App'))
-        │
-        ▼
-Webpack tải http://localhost:3001/remoteEntry.js  ← file manifest của remote
-        │
-        ▼
-Đàm phán shared module (react, react-dom, react-router-dom đã dùng singleton)
-        │
-        ▼
-Tải chunk products/App.tsx và render trong <Suspense fallback="Đang tải...">
-```
-
-> Mỗi remote chỉ được tải **một lần** (khi người dùng lần đầu vào route đó),  
-> sau đó Webpack cache lại trong bộ nhớ.
-
-### 3. Luồng thêm sản phẩm vào giỏ hàng (Cross-MFE Event)
-
-```
-products MFE (chạy trong :3001, được nhúng vào shell)
-        │
-        │  Người dùng bấm "Thêm vào giỏ"
-        ▼
-window.dispatchEvent(new CustomEvent('mfe:add-to-cart', {
-  detail: { product, quantity }
-}))
-        │
-        │  (DOM event lan truyền lên window – dùng chung 1 window trong shell)
-        ▼
-shell/src/contexts/CartContext.tsx
-  └── useEffect → window.addEventListener('mfe:add-to-cart', handler)
-        │
-        ▼
-setCart(prev => [...]) → cập nhật state giỏ hàng
-        │
-        ▼
-Header re-render → badge số lượng sản phẩm cập nhật
-```
-
-### 4. Luồng Checkout (Props Drilling)
-
-```
-shell/src/App.tsx
-  └── CartContext.useCart() → { cart, updateQuantity, clearCart }
-        │
-        │  Truyền trực tiếp qua props
-        ▼
-<CheckoutApp cart={cart} onCartUpdate={updateQuantity} onClearCart={clearCart} />
-  ├── /checkout     → <ShoppingCart>    (hiển thị, chỉnh sửa giỏ hàng)
-  └── /checkout/summary → <CheckoutSummary>  (xác nhận & đặt hàng → clearCart)
-```
-
-### 5. Shared Dependencies (Singleton)
-
-```
-shell, products, orders, account, checkout
-  └── đều khai báo shared:
-        react            → singleton → dùng chung 1 instance
-        react-dom        → singleton → dùng chung 1 instance
-        react-router-dom → singleton → dùng chung 1 BrowserRouter (của shell)
-```
-
-> Nhờ `singleton: true`, các remote không tự tạo BrowserRouter riêng – chúng  
-> dùng Router context của shell, nên `useNavigate`, `useParams`, ... hoạt động đúng.
-
----
 
 ## Cấu trúc thư mục
 
@@ -204,53 +128,6 @@ SD5818_MicroFE/
             └── CheckoutSummary.tsx  ← xác nhận đơn, gọi clearCart
 ```
 
----
-
-## Chi tiết từng Micro App
-
-### Shell – Host
-
-- Là **duy nhất** app có `BrowserRouter` và `Routes` cấp cao nhất.
-- Cung cấp 2 context cho toàn bộ ứng dụng:
-  - `AuthContext`: thông tin user (mock), `login()`, `logout()`
-  - `CartContext`: state giỏ hàng, lắng nghe custom event từ products MFE
-- Load các remote bằng `React.lazy` + `Suspense`.
-
-### Products – Remote
-
-- Hiển thị danh sách sản phẩm dạng grid và trang chi tiết.
-- **Không** tự quản lý giỏ hàng – chỉ `dispatchEvent('mfe:add-to-cart')` lên window.
-- Dữ liệu mock: iPhone 15 Pro, Samsung Galaxy S24 Ultra, MacBook Pro, v.v.
-
-### Orders – Remote
-
-- Hiển thị lịch sử đơn hàng và chi tiết từng đơn.
-- Dữ liệu mock, hoàn toàn độc lập.
-
-### Account – Remote
-
-- Xem và chỉnh sửa hồ sơ tài khoản.
-- Dùng `useState(editing)` thay vì router để chuyển giữa 2 view.
-
-### Checkout – Remote
-
-- Nhận `cart`, `onCartUpdate`, `onClearCart` qua props từ shell.
-- Sync props vào local state bằng `useEffect`.
-- Flow: **Giỏ hàng** → Sửa số lượng / Xoá → **Xác nhận** → `clearCart()`.
-
----
-
-## Giao tiếp giữa các MFE
-
-| Cơ chế | Từ | Đến | Dữ liệu |
-|---|---|---|---|
-| **Custom DOM Event** `mfe:add-to-cart` | products | shell (CartContext) | `{ product, quantity }` |
-| **Props drilling** | shell | checkout | `cart`, `onCartUpdate`, `onClearCart` |
-| **React Context** | shell | (nội bộ shell components) | `AuthContext`, `CartContext` |
-| **Shared Router** | shell | tất cả remotes | `BrowserRouter` singleton |
-
----
-
 ## Cài đặt và chạy project
 
 ### Yêu cầu
@@ -295,10 +172,6 @@ npm start --prefix account     # http://localhost:3003
 npm start --prefix checkout    # http://localhost:3004
 ```
 
-> **Lưu ý:** Các remote app (products, orders, account, checkout) phải được khởi động  
-> **trước hoặc cùng lúc** với shell. Nếu một remote chưa chạy, route tương ứng  
-> trong shell sẽ hiển thị lỗi khi người dùng truy cập.
-
 ### Build production
 
 ```bash
@@ -307,19 +180,3 @@ npm run build:all
 
 ---
 
-## Câu hỏi thường gặp
-
-**Q: Tại sao mỗi app có file `index.ts` và `bootstrap.tsx` riêng?**  
-A: `index.ts` chỉ làm một việc: `import('./bootstrap')` – dynamic import này bắt buộc để  
-Webpack có thời gian đàm phán (negotiate) các shared module (react, react-dom) trước khi  
-render. Nếu render trực tiếp trong `index.ts`, shared module chưa được resolve sẽ gây lỗi runtime.
-
-**Q: Tại sao dùng `singleton: true` cho shared dependencies?**  
-A: React và React Router không hỗ trợ nhiều instance trên cùng một trang. Nếu shell và remote  
-dùng 2 bản React khác nhau, hooks sẽ không hoạt động. `singleton: true` đảm bảo chỉ có  
-1 bản được dùng (thường là của shell – host).
-
-**Q: Tại sao `checkout` nhận cart qua props thay vì custom event?**  
-A: Checkout cần **đọc** toàn bộ state giỏ hàng (không chỉ lắng nghe sự kiện thêm),  
-và cần gọi `updateQuantity` / `clearCart` – props drilling phù hợp hơn cho  
-luồng dữ liệu hai chiều này.
