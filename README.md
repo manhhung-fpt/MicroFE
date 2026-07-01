@@ -68,7 +68,7 @@ shell/src/App.tsx
                            └── /checkout/* → lazy load checkout/App (từ :3004)
 
 
-## Cấu trúc thư mục
+
 
 ```
 
