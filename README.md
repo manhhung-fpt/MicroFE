@@ -71,61 +71,7 @@ shell/src/App.tsx
 ## Cấu trúc thư mục
 
 ```
-SD5818_MicroFE/
-├── package.json              ← root: chứa script chạy tất cả app song song
-│
-├── shell/                    ← HOST application (port 3000)
-│   ├── webpack.config.js     ← ModuleFederation: remotes
-│   ├── public/index.html
-│   └── src/
-│       ├── index.ts          ← entry point (dynamic import bootstrap)
-│       ├── bootstrap.tsx     ← ReactDOM.render
-│       ├── App.tsx           ← BrowserRouter + Routes + lazy remotes
-│       ├── declarations.d.ts ← khai báo type cho module federation
-│       ├── types.ts          ← CartItem, Product types
-│       ├── components/
-│       │   ├── Header.tsx    ← logo, user info, cart badge
-│       │   ├── Sidebar.tsx   ← navigation links
-│       │   └── Layout.tsx    ← khung bố cục chính
-│       └── contexts/
-│           ├── AuthContext.tsx  ← mock auth (user đăng nhập sẵn)
-│           └── CartContext.tsx  ← quản lý giỏ hàng + lắng nghe mfe:add-to-cart
-│
-├── products/                 ← REMOTE application (port 3001)
-│   ├── webpack.config.js     ← exposes: { './App': './src/App' }
-│   └── src/
-│       ├── App.tsx           ← Routes: / (list), /:id (detail)
-│       ├── components/
-│       │   ├── ProductList.tsx   ← grid sản phẩm
-│       │   ├── ProductCard.tsx   ← card + nút thêm giỏ hàng → dispatch event
-│       │   └── ProductDetail.tsx ← trang chi tiết sản phẩm
-│       └── data/products.ts  ← dữ liệu mock (iPhone, Samsung, MacBook,...)
-│
-├── orders/                   ← REMOTE application (port 3002)
-│   ├── webpack.config.js     ← exposes: { './App': './src/App' }
-│   └── src/
-│       ├── App.tsx           ← Routes: / (list), /:id (detail)
-│       ├── components/
-│       │   ├── OrderList.tsx     ← danh sách đơn hàng
-│       │   └── OrderDetail.tsx   ← chi tiết đơn hàng
-│       └── data/orders.ts    ← dữ liệu mock
-│
-├── account/                  ← REMOTE application (port 3003)
-│   ├── webpack.config.js     ← exposes: { './App': './src/App' }
-│   └── src/
-│       ├── App.tsx           ← useState(editing) điều hướng giữa view/edit
-│       └── components/
-│           ├── UserProfile.tsx   ← hiển thị thông tin tài khoản
-│           └── UpdateProfile.tsx ← form cập nhật hồ sơ
-│
-└── checkout/                 ← REMOTE application (port 3004)
-    ├── webpack.config.js     ← exposes: { './App': './src/App' }
-    └── src/
-        ├── App.tsx           ← nhận cart props từ shell, Routes: / + /summary
-        ├── types.ts
-        └── components/
-            ├── ShoppingCart.tsx     ← danh sách, số lượng, xoá sản phẩm
-            └── CheckoutSummary.tsx  ← xác nhận đơn, gọi clearCart
+
 ```
 
 ## Cài đặt và chạy project
